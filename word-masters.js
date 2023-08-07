@@ -57,6 +57,6 @@ document.addEventListener("keydown", function (event) {
 
 function isLetter(letter) {
     return /^[a-zA-Z]$/.test(letter);
-  }
+}
 
 init();
