@@ -1,3 +1,4 @@
+
 const letters = document.querySelectorAll(".scoreboard-letter");
 const loading = document.querySelector(".info-bar");
 console.log(letters);
