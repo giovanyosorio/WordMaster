@@ -49,6 +49,7 @@ async function init() {
             if (guessParts[i]===wordParts[i]){
                 letters[ANSWER_LENGTH*currentWord+i].classList.add("correct")
                 map[guessParts[i]]--;
+                
             }
            // else if (wordParts.includes(guessParts[i])){
         }
