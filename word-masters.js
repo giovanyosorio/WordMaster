@@ -7,6 +7,13 @@ async function init() {
     let currentGues=""
     let currentWord=0
 
+    const response=await fetch("https://words.dev-apis.com/word-of-the-day")
+    const resObject=await response.json()
+
+    const word=resObject.word.toUpperCase()
+    setLoading(false);
+
+
     function addLetter(letter) {
         // TODO: Add the letter to the end 
         if (currentGues.length < ANSWER_LENGTH) {
@@ -17,6 +24,7 @@ async function init() {
         else{
             currentGues=currentGues.substring(0,currentGues.length-1)+letter;
         }
+
         letters[ANSWER_LENGTH*currentWord+currentGues.length - 1].innerText = letter;
 
     }
@@ -59,6 +67,11 @@ document.addEventListener("keydown", function (event) {
 
 function isLetter(letter) {
     return /^[a-zA-Z]$/.test(letter);
+}
+
+function setLoading(isLoading) {
+    console.log("setLoading", isLoading);
+    loading.classList.toggle("hidden", !isLoading);
 }
 
 init();
