@@ -10,20 +10,22 @@ async function init() {
     function addLetter(letter) {
         // TODO: Add the letter to the end 
         if (currentGues.length < ANSWER_LENGTH) {
+        
             currentGues += letter;
+        
         }
         else{
-            // replace last letter
-            console.log("replace last letter");
             currentGues=currentGues.substring(0,currentGues.length-1)+letter;
         }
         letters[ANSWER_LENGTH*currentWord+currentGues.length - 1].innerText = letter;
+
     }
 
     async function commit() {
         if (currentGues.length !== ANSWER_LENGTH) {
             // do notning
             return 
+        
         }
 
         // TODO validate word
