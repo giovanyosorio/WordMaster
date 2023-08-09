@@ -5,7 +5,8 @@ const ANSWER_LENGTH = 5;
 
 async function init() {
     let currentGues=""
-    let currentWord=0
+    let currentRow=0
+    const ROUNDS=6
 
     const response=await fetch("https://words.dev-apis.com/word-of-the-day")
     const resObject=await response.json()
@@ -14,6 +15,7 @@ async function init() {
     const wordParts=word.split("")
     console.log(word);
     setLoading(false);
+    let done=false
 
 
     function addLetter(letter) {
@@ -27,7 +29,7 @@ async function init() {
             currentGues=currentGues.substring(0,currentGues.length-1)+letter;
         }
 
-        letters[ANSWER_LENGTH*currentWord+currentGues.length - 1].innerText = letter;
+        letters[ANSWER_LENGTH*currentRow+currentGues.length - 1].innerText = letter;
 
     }
 
@@ -39,15 +41,21 @@ async function init() {
         }
 
         // TODO validate word
-
+        if (currentGues===word){
+            alert("win");
+            done=true;
+            return
+        }
         // TODO do all the marking "correct" "close" or "wrong"
 
         const guessParts=currentGues.split("")
         const map=makeUp(guessParts)
-        console.log(map);
+        
+        console.log("map",map);
         for (let i=0;i<ANSWER_LENGTH;i++){
             if (guessParts[i]===wordParts[i]){
-                letters[ANSWER_LENGTH*currentWord+i].classList.add("correct")
+                letters[ANSWER_LENGTH*currentRow+i].classList.add("correct")
+                console.log("correct",map[guessParts[i]]);
                 map[guessParts[i]]--;
                 
             }
@@ -59,27 +67,38 @@ async function init() {
                //do nothing
             }else if (wordParts.includes(guessParts[i]) && map[guessParts[i]]>0) {
                 //  mark as  close
-                letters[ANSWER_LENGTH*currentWord+i].classList.add("close")
+                letters[ANSWER_LENGTH*currentRow+i].classList.add("close")
+                console.log("close",map[guessParts[i]]);
                 map[guessParts[i]]--;
             }
             else{
-                letters[ANSWER_LENGTH*currentWord+i].classList.add("wrong")
+                letters[ANSWER_LENGTH*currentRow+i].classList.add("wrong")
             }
             
         }
         // TODO did they win or lose?
-
-
-        currentWord++;
+        currentRow++;
         currentGues="";    
+
+        if (currentRow===ROUNDS){
+            alert("you lose the word was "+word);
+            done=true;
+            return
+        }
+
     
     }
 
     function removeLetter(){
         currentGues=currentGues.substring(0,currentGues.length-1);
-        letters[ANSWER_LENGTH*currentWord+currentGues.length].innerText = "";
+        letters[ANSWER_LENGTH*currentRow+currentGues.length].innerText = "";
     }
 document.addEventListener("keydown", function (event) {
+    if (done){
+        return
+    }
+    
+    
     const action = event.key;
 
     if (action === "Enter") {
