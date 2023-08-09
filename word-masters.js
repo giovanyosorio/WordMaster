@@ -1,137 +1,176 @@
-
-const letters = document.querySelectorAll(".scoreboard-letter");
-const loading = document.querySelector(".info-bar");
 const ANSWER_LENGTH = 5;
+const ROUNDS = 6;
+const letters = document.querySelectorAll(".scoreboard-letter");
+const loadingDiv = document.querySelector(".info-bar");
 
+// I like to do an init function so I can use "await"
 async function init() {
-    let currentGues=""
-    let currentRow=0
-    const ROUNDS=6
+    // the state for the app
+    let currentRow = 0;
+    let currentGuess = "";
+    let done = false;
+    let isLoading = true;
 
-    const response=await fetch("https://words.dev-apis.com/word-of-the-day")
-    const resObject=await response.json()
+    // nab the word of the day
+    const res = await fetch("https://words.dev-apis.com/word-of-the-day");
+    const { word: wordRes } = await res.json();
+    const word = wordRes.toUpperCase();
+    const wordParts = word.split("");
+    isLoading = false;
+    setLoading(isLoading);
 
-    const word=resObject.word.toUpperCase()
-    const wordParts=word.split("")
-    console.log(word);
-    setLoading(false);
-    let done=false
-
-
+    // user adds a letter to the current guess
     function addLetter(letter) {
-        // TODO: Add the letter to the end 
-        if (currentGues.length < ANSWER_LENGTH) {
-        
-            currentGues += letter;
-        
-        }
-        else{
-            currentGues=currentGues.substring(0,currentGues.length-1)+letter;
+        if (currentGuess.length < ANSWER_LENGTH) {
+            currentGuess += letter;
+        } else {
+            current = currentGuess.substring(0, currentGuess.length - 1) + letter;
         }
 
-        letters[ANSWER_LENGTH*currentRow+currentGues.length - 1].innerText = letter;
-
+        letters[currentRow * ANSWER_LENGTH + currentGuess.length - 1].innerText =
+            letter;
     }
 
+    // use tries to enter a guess
     async function commit() {
-        if (currentGues.length !== ANSWER_LENGTH) {
-            // do notning
-            return 
-        
+        if (currentGuess.length !== ANSWER_LENGTH) {
+            // do nothing
+            return;
         }
 
-        // TODO validate word
-        if (currentGues===word){
-            alert("win");
-            done=true;
-            return
-        }
-        // TODO do all the marking "correct" "close" or "wrong"
+        // check the API to see if it's a valid word
+        // skip this step if you're not checking for valid words
+        isLoading = true;
+        setLoading(isLoading);
+        const res = await fetch("https://words.dev-apis.com/validate-word", {
+            method: "POST",
+            body: JSON.stringify({ word: currentGuess }),
+        });
+        const { validWord } = await res.json();
+        isLoading = false;
+        setLoading(isLoading);
 
-        const guessParts=currentGues.split("")
-        const map=makeUp(guessParts)
-        
-        console.log("map",map);
-        for (let i=0;i<ANSWER_LENGTH;i++){
-            if (guessParts[i]===wordParts[i]){
-                letters[ANSWER_LENGTH*currentRow+i].classList.add("correct")
-                console.log("correct",map[guessParts[i]]);
-                map[guessParts[i]]--;
-                
-            }
-           // else if (wordParts.includes(guessParts[i])){
+        // not valid, mark the word as invalid and return
+        if (!validWord) {
+            markInvalidWord();
+            return;
         }
 
+        const guessParts = currentGuess.split("");
+        const map = makeMap(wordParts);
+        let allRight = true;
+
+        // first pass just finds correct letters so we can mark those as
+        // correct first
         for (let i = 0; i < ANSWER_LENGTH; i++) {
-            if (guessParts[i]===wordParts[i]) {
-               //do nothing
-            }else if (wordParts.includes(guessParts[i]) && map[guessParts[i]]>0) {
-                //  mark as  close
-                letters[ANSWER_LENGTH*currentRow+i].classList.add("close")
-                console.log("close",map[guessParts[i]]);
+            if (guessParts[i] === wordParts[i]) {
+                // mark as correct
+                letters[currentRow * ANSWER_LENGTH + i].classList.add("correct");
                 map[guessParts[i]]--;
             }
-            else{
-                letters[ANSWER_LENGTH*currentRow+i].classList.add("wrong")
+        }
+
+        // second pass finds close and wrong letters
+        // we use the map to make sure we mark the correct amount of
+        // close letters
+        for (let i = 0; i < ANSWER_LENGTH; i++) {
+            if (guessParts[i] === wordParts[i]) {
+                // do nothing
+            } else if (map[guessParts[i]] && map[guessParts[i]] > 0) {
+                // mark as close
+                allRight = false;
+                letters[currentRow * ANSWER_LENGTH + i].classList.add("close");
+                map[guessParts[i]]--;
+            } else {
+                // wrong
+                allRight = false;
+                letters[currentRow * ANSWER_LENGTH + i].classList.add("wrong");
             }
-            
         }
-        // TODO did they win or lose?
+
         currentRow++;
-        currentGues="";    
+        currentGuess = "";
+        if (allRight) {
+            // win
+            alert("you win");
+            document.querySelector(".brand").classList.add("winner");
+            done = true;
+        } else if (currentRow === ROUNDS) {
+            // lose
+            alert(`you lose, the word was ${word}`);
+            done = true;
+        }
+    }
 
-        if (currentRow===ROUNDS){
-            alert("you lose the word was "+word);
-            done=true;
-            return
+    // user hits backspace, if the the length of the string is 0 then do
+    // nothing
+    function backspace() {
+        currentGuess = currentGuess.substring(0, currentGuess.length - 1);
+        letters[currentRow * ANSWER_LENGTH + currentGuess.length].innerText = "";
+    }
+
+    // let the user know that their guess wasn't a real word
+    // skip this if you're not doing guess validation
+    function markInvalidWord() {
+        for (let i = 0; i < ANSWER_LENGTH; i++) {
+            letters[currentRow * ANSWER_LENGTH + i].classList.remove("invalid");
+
+            // long enough for the browser to repaint without the "invalid class" so we can then add it again
+            setTimeout(
+                () => letters[currentRow * ANSWER_LENGTH + i].classList.add("invalid"),
+                10
+            );
+        }
+    }
+
+    // listening for event keys and routing to the right function
+    // we listen on keydown so we can catch Enter and Backspace
+    document.addEventListener("keydown", function handleKeyPress(event) {
+        if (done || isLoading) {
+            // do nothing;
+            return;
         }
 
-    
-    }
+        const action = event.key;
 
-    function removeLetter(){
-        currentGues=currentGues.substring(0,currentGues.length-1);
-        letters[ANSWER_LENGTH*currentRow+currentGues.length].innerText = "";
-    }
-document.addEventListener("keydown", function (event) {
-    if (done){
-        return
-    }
-    
-    
-    const action = event.key;
-
-    if (action === "Enter") {
-    commit();
-    } else if (action === "Backspace") {
-    removeLetter();
-    } else if (isLetter(action)) {
-    addLetter(action.toUpperCase());
-    }
+        if (action === "Enter") {
+            commit();
+        } else if (action === "Backspace") {
+            backspace();
+        } else if (isLetter(action)) {
+            addLetter(action.toUpperCase());
+        } else {
+            // do nothing
+        }
     });
 }
 
+// a little function to check to see if a character is alphabet letter
+// this uses regex (the /[a-zA-Z]/ part) but don't worry about it
+// you can learn that later and don't need it too frequently
 function isLetter(letter) {
     return /^[a-zA-Z]$/.test(letter);
 }
 
+// show the loading spinner when needed
 function setLoading(isLoading) {
-    console.log("setLoading", isLoading);
-    loading.classList.toggle("hidden", !isLoading);
+    loadingDiv.classList.toggle("hidden", !isLoading);
 }
 
-function makeUp(array) {
-    const obj={};
-    for (let i=0;i<array.length;i++){
-        const letter=array[i];
-        if (obj[letter]){
-            obj[letter]++;
-        }else{
-            obj[letter]=1;
+// takes an array of letters (like ['E', 'L', 'I', 'T', 'E']) and creates
+// an object out of it (like {E: 2, L: 1, T: 1}) so we can use that to
+// make sure we get the correct amount of letters marked close instead
+// of just wrong or correct
+function makeMap(array) {
+    const obj = {};
+    for (let i = 0; i < array.length; i++) {
+        if (obj[array[i]]) {
+            obj[array[i]]++;
+        } else {
+            obj[array[i]] = 1;
         }
     }
     return obj;
-
 }
 
 init();
