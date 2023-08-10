@@ -66,6 +66,7 @@ async function init() {
             if (guessParts[i] === wordParts[i]) {
                 // mark as correct
                 letters[currentRow * ANSWER_LENGTH + i].classList.add("correct");
+                console.log(map[guessParts[i]]);
                 map[guessParts[i]]--;
             }
         }
