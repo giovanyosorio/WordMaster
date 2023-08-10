@@ -27,8 +27,8 @@ async function init() {
             current = currentGuess.substring(0, currentGuess.length - 1) + letter;
         }
 
-        letters[currentRow * ANSWER_LENGTH + currentGuess.length - 1].innerText =
-            letter;
+        letters[currentRow * ANSWER_LENGTH + currentGuess.length - 1].innerText = letter;
+
     }
 
     // use tries to enter a guess
